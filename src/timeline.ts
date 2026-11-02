@@ -1,5 +1,4 @@
-import episodeJson from "../episodes/sample-kyushokuhi.json";
-import manifestJson from "../public/audio/manifest.json";
+import type { Episode, Line, Scene } from "./schema";
 
 export const FPS = 30;
 export const TRANSITION = 12;
@@ -7,32 +6,9 @@ const LEAD = TRANSITION + 6; // narration starts after the transition has settle
 const GAP = 9;
 const TAIL = 18;
 
-export type Speaker = "anchor" | "kid";
-
 export type Word = { text: string; start: number; end: number };
-
-export type Line = {
-  id: string;
-  speaker: Speaker;
-  text: string;
-  /** Reading fed to TTS when it differs from the text. */
-  yomi?: string;
-  /** On-screen version of the text with explicit line breaks (\n). */
-  telop?: string;
-  emphasis?: string[];
-};
-
-export type SceneData = {
-  id: string;
-  type: "coldOpen" | "hook" | "counter" | "family" | "summary";
-  lines: Line[];
-  bigLabel?: string;
-  big?: string;
-  tag?: string;
-  kids?: number;
-  perKid?: number;
-  points?: string[];
-};
+export type ManifestEntry = { id: string; file: string; duration: number; words: Word[] };
+export type Manifest = Record<string, ManifestEntry>;
 
 export type TimedLine = Line & {
   /** Frame offset inside its scene. */
@@ -44,28 +20,23 @@ export type TimedLine = Line & {
   words: Word[];
 };
 
-export type TimedScene = Omit<SceneData, "lines"> & {
+export type TimedScene = Omit<Scene, "lines"> & {
   lines: TimedLine[];
   duration: number;
   globalStart: number;
 };
 
-type ManifestEntry = { id: string; file: string; duration: number; words: Word[] };
-
-const episode = episodeJson as { title: string; city: string; date: string; source: string; sourceNote: string; scenes: SceneData[] };
-const manifest = manifestJson as Record<string, ManifestEntry>;
-
-export const meta = {
-  title: episode.title,
-  city: episode.city,
-  date: episode.date,
-  source: episode.source,
-  sourceNote: episode.sourceNote,
+export type Timeline = {
+  meta: Omit<Episode, "scenes">;
+  scenes: TimedScene[];
+  lines: TimedLine[];
+  total: number;
 };
 
-const buildTimeline = (): { scenes: TimedScene[]; total: number } => {
+export const buildTimeline = (episode: Episode, manifest: Manifest): Timeline => {
+  const { scenes: rawScenes, ...meta } = episode;
   let globalStart = 0;
-  const scenes = episode.scenes.map((scene) => {
+  const scenes = rawScenes.map((scene) => {
     let cursor = LEAD;
     const lines = scene.lines.map((line) => {
       const audio = manifest[line.id];
@@ -79,12 +50,12 @@ const buildTimeline = (): { scenes: TimedScene[]; total: number } => {
     globalStart += timedScene.duration - TRANSITION;
     return timedScene;
   });
-  return { scenes, total: globalStart + TRANSITION };
+  return { meta, scenes, lines: scenes.flatMap((s) => s.lines), total: globalStart + TRANSITION };
 };
 
-export const timeline = buildTimeline();
-export const allLines = timeline.scenes.flatMap((s) => s.lines);
-
-/** Seconds into a line at which the given word (substring match) starts, or undefined. */
-export const wordTime = (line: TimedLine, needle: string): number | undefined =>
-  line.words.find((w) => w.text.includes(needle) || needle.includes(w.text))?.start;
+/** Frame inside the scene at which a word of the line is spoken, or undefined. */
+export const wordFrame = (line: TimedLine, needle: string | undefined, fps: number): number | undefined => {
+  if (!needle) return undefined;
+  const word = line.words.find((w) => w.text.includes(needle) || needle.includes(w.text));
+  return word ? line.start + Math.round(word.start * fps) : undefined;
+};

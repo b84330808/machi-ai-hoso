@@ -4,48 +4,80 @@
   "date": "2026-11-03",
   "source": "サンプル市議会 議案第12号 p.3",
   "sourceNote": "架空のデモデータ",
+  "audience": "parents",
   "scenes": [
     {
       "id": "s1",
-      "type": "coldOpen",
+      "layout": "skit",
+      "prop": { "type": "letter", "title": "給食費の\nお知らせ" },
       "lines": [
-        { "id": "s1l1", "speaker": "kid", "text": "ねえ、給食費って上がるの？", "telop": "ねえ、給食費って\n上がるの？" }
+        { "id": "s1l1", "speaker": "kid", "text": "ねえ、給食費って上がるの？", "telop": "ねえ、給食費って\n上がるの？", "visual": { "type": "question", "mark": "？", "at": "上がる" } }
       ]
     },
     {
       "id": "s2",
-      "type": "hook",
-      "bigLabel": "給食費",
-      "big": "月+500円",
-      "tag": "来年度から",
+      "layout": "anchor",
       "lines": [
-        { "id": "s2l1", "speaker": "anchor", "text": "来年度から、給食費が月500円上がります。", "telop": "来年度から、\n給食費が月500円\n上がります。", "emphasis": ["月500円"] }
+        {
+          "id": "s2l1",
+          "speaker": "anchor",
+          "text": "来年度から、給食費が月500円上がります。",
+          "telop": "来年度から、\n給食費が月500円\n上がります。",
+          "emphasis": ["月500円"],
+          "visual": { "type": "stamp", "tag": "来年度から", "label": "給食費", "big": "月+500円", "at": "月" }
+        }
       ]
     },
     {
       "id": "s3",
-      "type": "counter",
+      "layout": "desk",
       "lines": [
-        { "id": "s3l1", "speaker": "anchor", "text": "1年で5,500円。", "emphasis": ["5,500円"] },
-        { "id": "s3l2", "speaker": "anchor", "text": "給食1食あたり、約25円の値上げです。", "yomi": "給食いっしょくあたり、約25円の値上げです。", "telop": "給食1食あたり、\n約25円の値上げです。", "emphasis": ["約25円"] }
+        { "id": "s3l1", "speaker": "anchor", "text": "1年で5,500円。", "emphasis": ["5,500円"], "visual": { "type": "counter", "label": "1年で", "from": 500, "to": 5500, "unit": "円", "note": "月500円 × 11か月", "icon": "yen" } },
+        {
+          "id": "s3l2",
+          "speaker": "anchor",
+          "text": "給食1食あたり、約25円の値上げです。",
+          "yomi": "給食いっしょくあたり、約25円の値上げです。",
+          "telop": "給食1食あたり、\n約25円の値上げです。",
+          "emphasis": ["約25円"],
+          "visual": { "type": "counter", "label": "給食1食あたり", "from": 0, "to": 25, "prefix": "約", "unit": "円", "icon": "meal" }
+        }
       ]
     },
     {
       "id": "s4",
-      "type": "family",
-      "kids": 2,
-      "perKid": 5500,
+      "layout": "desk",
       "lines": [
-        { "id": "s4l1", "speaker": "anchor", "text": "お子さんが2人なら、年1万1,000円です。", "telop": "お子さんが2人なら、\n年1万1,000円です。", "emphasis": ["年1万1,000円"] },
-        { "id": "s4l2", "speaker": "anchor", "text": "収入の条件を満たせば、就学援助で補助があります。", "telop": "収入の条件を満たせば、\n就学援助で補助があります。", "emphasis": ["補助"] }
+        {
+          "id": "s4l1",
+          "speaker": "anchor",
+          "text": "お子さんが2人なら、年1万1,000円です。",
+          "telop": "お子さんが2人なら、\n年1万1,000円です。",
+          "emphasis": ["年1万1,000円"],
+          "visual": { "type": "people", "count": 2, "each": "+5,500円/年", "totalPrefix": "年", "total": 11000, "totalUnit": "円", "at": "年" }
+        },
+        {
+          "id": "s4l2",
+          "speaker": "anchor",
+          "text": "収入の条件を満たせば、就学援助で補助があります。",
+          "telop": "収入の条件を満たせば、\n就学援助で補助があります。",
+          "emphasis": ["補助"],
+          "visual": { "type": "card", "icon": "check", "title": "就学援助で補助あり", "note": "※収入の条件があります" }
+        }
       ]
     },
     {
       "id": "s5",
-      "type": "summary",
-      "points": ["4月から", "月500円アップ", "補助あり"],
+      "layout": "desk",
       "lines": [
-        { "id": "s5l1", "speaker": "anchor", "text": "ポイントは3つ。4月から、月500円、補助あり。", "telop": "ポイントは3つ。\n4月から、月500円、\n補助あり。", "emphasis": ["3つ"] },
+        {
+          "id": "s5l1",
+          "speaker": "anchor",
+          "text": "ポイントは3つ。4月から、月500円、補助あり。",
+          "telop": "ポイントは3つ。\n4月から、月500円、\n補助あり。",
+          "emphasis": ["3つ"],
+          "visual": { "type": "points", "title": "ポイントは3つ", "items": [{ "text": "4月から", "at": "4月" }, { "text": "月500円アップ", "at": "500" }, { "text": "補助あり", "at": "補助" }] }
+        },
         { "id": "s5l2", "speaker": "kid", "text": "じゃあ、残さず食べる！" }
       ]
     }

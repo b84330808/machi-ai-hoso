@@ -1,9 +1,17 @@
 import React from "react";
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
-import { allLines, meta, TimedLine, timeline } from "../timeline";
+import { useTimeline } from "../context";
+import type { TimedLine } from "../timeline";
 import { bodyFont, colors, layout, outline, pixelFont } from "../theme";
 
 const SPEAKER_NAMES = { anchor: "マチコ（AIアナ）", kid: "ソウタ" } as const;
+
+/** The line being spoken, or the last one until the next starts. */
+const useCurrentLine = (): TimedLine | undefined => {
+  const frame = useCurrentFrame();
+  const { lines } = useTimeline();
+  return [...lines].reverse().find((l) => frame >= l.globalStart);
+};
 
 /** Fixed lower panel behind telops so the stage can slide independently. */
 export const LowerPanel: React.FC = () => (
@@ -22,7 +30,8 @@ export const LowerPanel: React.FC = () => (
 
 export const Header: React.FC = () => {
   const frame = useCurrentFrame();
-  const progress = Math.min(1, frame / timeline.total);
+  const { meta, total } = useTimeline();
+  const progress = Math.min(1, frame / total);
   const [, month, day] = meta.date.split("-").map(Number);
   return (
     <>
@@ -132,54 +141,59 @@ const TelopLine: React.FC<{ line: TimedLine }> = ({ line }) => {
   );
 };
 
-/** Shows the line being spoken, and keeps the last one up until the next starts. */
 export const Telop: React.FC = () => {
-  const frame = useCurrentFrame();
-  const current = [...allLines].reverse().find((l) => frame >= l.globalStart);
+  const current = useCurrentLine();
   if (!current) return null;
   return <TelopLine key={current.id} line={current} />;
 };
 
-export const SourceBar: React.FC = () => (
-  <div
-    style={{
-      position: "absolute",
-      top: layout.sourceTop,
-      left: 60,
-      right: 60,
-      display: "flex",
-      alignItems: "center",
-      gap: 16,
-      fontFamily: bodyFont,
-      fontWeight: 700,
-      fontSize: 30,
-      color: "#c9cbe8",
-    }}
-  >
-    <svg width={36} height={44} viewBox="0 0 9 11" shapeRendering="crispEdges">
-      <rect x={0} y={0} width={9} height={11} fill="#c9cbe8" />
-      <rect x={2} y={3} width={5} height={1} fill={colors.panel} />
-      <rect x={2} y={5} width={5} height={1} fill={colors.panel} />
-      <rect x={2} y={7} width={3} height={1} fill={colors.panel} />
-    </svg>
-    <span>出典：{meta.source}</span>
-    <span style={{ marginLeft: "auto", fontSize: 24, color: colors.ink, background: "#c9cbe8", padding: "2px 12px", borderRadius: 6 }}>{meta.sourceNote}</span>
-  </div>
-);
-
-const TICKER = "▶ サンプル市のニュースを毎週3分で　／　内容はすべて市の公開資料から作成　／　次回：ごみ収集日の変更について　";
-
 /** News crawl across the front of the desk. */
 export const Ticker: React.FC = () => {
   const frame = useCurrentFrame();
-  const itemWidth = TICKER.length * 40;
+  const { meta } = useTimeline();
+  const text = `▶ ${meta.city}のニュースを毎週3分で　／　内容はすべて公開資料から作成　／　今日のニュース：${meta.title}　`;
+  const itemWidth = text.length * 40;
   const x = -((frame * 5) % itemWidth);
   return (
     <div style={{ position: "absolute", left: 0, top: 1040, width: layout.width, height: 70, overflow: "hidden", background: colors.yellow, borderTop: `6px solid ${colors.ink}` }}>
       <div style={{ position: "absolute", left: x, top: 8, whiteSpace: "nowrap", fontFamily: bodyFont, fontWeight: 900, fontSize: 38, color: colors.ink }}>
-        <span style={{ display: "inline-block", width: itemWidth }}>{TICKER}</span>
-        <span style={{ display: "inline-block", width: itemWidth }}>{TICKER}</span>
+        <span style={{ display: "inline-block", width: itemWidth }}>{text}</span>
+        <span style={{ display: "inline-block", width: itemWidth }}>{text}</span>
       </div>
+    </div>
+  );
+};
+
+/** Citation for the line on screen; falls back to the episode's main source. */
+export const SourceBar: React.FC = () => {
+  const { meta } = useTimeline();
+  const current = useCurrentLine();
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: layout.sourceTop,
+        left: 60,
+        right: 60,
+        display: "flex",
+        alignItems: "center",
+        gap: 16,
+        fontFamily: bodyFont,
+        fontWeight: 700,
+        fontSize: 30,
+        color: "#c9cbe8",
+      }}
+    >
+      <svg width={36} height={44} viewBox="0 0 9 11" shapeRendering="crispEdges" style={{ flexShrink: 0 }}>
+        <rect x={0} y={0} width={9} height={11} fill="#c9cbe8" />
+        <rect x={2} y={3} width={5} height={1} fill={colors.panel} />
+        <rect x={2} y={5} width={5} height={1} fill={colors.panel} />
+        <rect x={2} y={7} width={3} height={1} fill={colors.panel} />
+      </svg>
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>出典：{current?.sourceRef ?? meta.source}</span>
+      {meta.sourceNote && (
+        <span style={{ marginLeft: "auto", flexShrink: 0, fontSize: 24, color: colors.ink, background: "#c9cbe8", padding: "2px 12px", borderRadius: 6 }}>{meta.sourceNote}</span>
+      )}
     </div>
   );
 };

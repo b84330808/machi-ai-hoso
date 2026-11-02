@@ -3,15 +3,18 @@ import { AbsoluteFill, Audio, interpolate, Sequence, staticFile } from "remotion
 import { linearTiming, TransitionSeries } from "@remotion/transitions";
 import { slide } from "@remotion/transitions/slide";
 import { OverlayRoot } from "./components/Overlay";
+import { TimelineContext } from "./context";
 import { SceneView } from "./Scenes";
-import { allLines, timeline, TRANSITION } from "./timeline";
+import { Timeline, TRANSITION } from "./timeline";
+
+export type EpisodeProps = { timeline: Timeline | null };
 
 const DUCK_PAD = 6;
 
 /** BGM volume: quieter while someone is speaking, fading at both ends. */
-const bgmVolume = (frame: number) => {
+const bgmVolume = (timeline: Timeline) => (frame: number) => {
   const distance = Math.min(
-    ...allLines.map((l) => {
+    ...timeline.lines.map((l) => {
       if (frame >= l.globalStart && frame < l.globalStart + l.frames) return 0;
       return frame < l.globalStart ? l.globalStart - frame : frame - (l.globalStart + l.frames);
     }),
@@ -21,29 +24,34 @@ const bgmVolume = (frame: number) => {
   return base * fade;
 };
 
-export const Episode: React.FC = () => (
-  <AbsoluteFill style={{ backgroundColor: "#14142b" }}>
-    <TransitionSeries>
-      {timeline.scenes.map((scene, i) => (
-        <Fragment key={scene.id}>
-          {i > 0 && (
-            <TransitionSeries.Transition
-              presentation={slide({ direction: i % 2 ? "from-right" : "from-bottom" })}
-              timing={linearTiming({ durationInFrames: TRANSITION })}
-            />
-          )}
-          <TransitionSeries.Sequence durationInFrames={scene.duration}>
-            <SceneView scene={scene} index={i} />
-          </TransitionSeries.Sequence>
-        </Fragment>
-      ))}
-    </TransitionSeries>
-    <OverlayRoot />
-    {allLines.map((line) => (
-      <Sequence key={line.id} from={line.globalStart} durationInFrames={line.frames} layout="none">
-        <Audio src={staticFile(line.file)} />
-      </Sequence>
-    ))}
-    <Audio src={staticFile("audio/bgm.wav")} loop volume={bgmVolume} />
-  </AbsoluteFill>
-);
+export const Episode: React.FC<EpisodeProps> = ({ timeline }) => {
+  if (!timeline) return null;
+  return (
+    <TimelineContext.Provider value={timeline}>
+      <AbsoluteFill style={{ backgroundColor: "#14142b" }}>
+        <TransitionSeries>
+          {timeline.scenes.map((scene, i) => (
+            <Fragment key={scene.id}>
+              {i > 0 && (
+                <TransitionSeries.Transition
+                  presentation={slide({ direction: i % 2 ? "from-right" : "from-bottom" })}
+                  timing={linearTiming({ durationInFrames: TRANSITION })}
+                />
+              )}
+              <TransitionSeries.Sequence durationInFrames={scene.duration}>
+                <SceneView scene={scene} index={i} />
+              </TransitionSeries.Sequence>
+            </Fragment>
+          ))}
+        </TransitionSeries>
+        <OverlayRoot />
+        {timeline.lines.map((line) => (
+          <Sequence key={line.id} from={line.globalStart} durationInFrames={line.frames} layout="none">
+            <Audio src={staticFile(line.file)} />
+          </Sequence>
+        ))}
+        <Audio src={staticFile("audio/bgm.wav")} loop volume={bgmVolume(timeline)} />
+      </AbsoluteFill>
+    </TimelineContext.Provider>
+  );
+};
