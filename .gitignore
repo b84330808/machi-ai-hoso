@@ -1,0 +1,6 @@
+node_modules/
+out/
+# Generated audio (TTS output and synthesized SFX/BGM) is rebuilt by `npm run tts` / `npm run sfx`
+public/audio/
+.env
+.env.*

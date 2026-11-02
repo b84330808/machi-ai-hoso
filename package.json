@@ -1,0 +1,28 @@
+{
+  "name": "machi-ai-hoso",
+  "version": "0.1.0",
+  "private": true,
+  "description": "まちのAI放送局 — turns municipal council decisions into short animated news videos",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "tts": "python scripts/tts.py",
+    "sfx": "python scripts/synth_audio.py",
+    "studio": "remotion studio",
+    "render": "remotion render Episode out/episode.mp4",
+    "still": "remotion still Episode out/still.png --frame=60"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.540",
+    "@remotion/google-fonts": "4.0.540",
+    "@remotion/media-utils": "4.0.540",
+    "@remotion/transitions": "4.0.540",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.540"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "typescript": "5.9.3"
+  }
+}

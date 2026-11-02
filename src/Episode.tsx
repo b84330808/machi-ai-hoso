@@ -1,0 +1,49 @@
+import React, { Fragment } from "react";
+import { AbsoluteFill, Audio, interpolate, Sequence, staticFile } from "remotion";
+import { linearTiming, TransitionSeries } from "@remotion/transitions";
+import { slide } from "@remotion/transitions/slide";
+import { OverlayRoot } from "./components/Overlay";
+import { SceneView } from "./Scenes";
+import { allLines, timeline, TRANSITION } from "./timeline";
+
+const DUCK_PAD = 6;
+
+/** BGM volume: quieter while someone is speaking, fading at both ends. */
+const bgmVolume = (frame: number) => {
+  const distance = Math.min(
+    ...allLines.map((l) => {
+      if (frame >= l.globalStart && frame < l.globalStart + l.frames) return 0;
+      return frame < l.globalStart ? l.globalStart - frame : frame - (l.globalStart + l.frames);
+    }),
+  );
+  const base = interpolate(distance, [0, DUCK_PAD], [0.06, 0.16], { extrapolateRight: "clamp" });
+  const fade = interpolate(frame, [0, 15, timeline.total - 30, timeline.total], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  return base * fade;
+};
+
+export const Episode: React.FC = () => (
+  <AbsoluteFill style={{ backgroundColor: "#14142b" }}>
+    <TransitionSeries>
+      {timeline.scenes.map((scene, i) => (
+        <Fragment key={scene.id}>
+          {i > 0 && (
+            <TransitionSeries.Transition
+              presentation={slide({ direction: i % 2 ? "from-right" : "from-bottom" })}
+              timing={linearTiming({ durationInFrames: TRANSITION })}
+            />
+          )}
+          <TransitionSeries.Sequence durationInFrames={scene.duration}>
+            <SceneView scene={scene} index={i} />
+          </TransitionSeries.Sequence>
+        </Fragment>
+      ))}
+    </TransitionSeries>
+    <OverlayRoot />
+    {allLines.map((line) => (
+      <Sequence key={line.id} from={line.globalStart} durationInFrames={line.frames} layout="none">
+        <Audio src={staticFile(line.file)} />
+      </Sequence>
+    ))}
+    <Audio src={staticFile("audio/bgm.wav")} loop volume={bgmVolume} />
+  </AbsoluteFill>
+);
