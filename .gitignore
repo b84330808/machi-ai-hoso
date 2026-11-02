@@ -6,3 +6,4 @@ public/audio/
 .env.*
 
 public/episode.json
+sources/

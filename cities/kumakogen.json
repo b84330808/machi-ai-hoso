@@ -1,0 +1,21 @@
+{
+  "id": "kumakogen",
+  "city": "久万高原町",
+  "prefecture": "愛媛県",
+  "license": "公共データ利用規約（PDL1.0）",
+  "licenseUrl": "https://www.kumakogen.jp/site/userguide/3225.html",
+  "docs": [
+    {
+      "id": "suido-gaiyo",
+      "title": "久万高原町 建設課「水道料金の改定案について」",
+      "url": "https://www.kumakogen.jp/uploaded/attachment/15390.pdf",
+      "page": "https://www.kumakogen.jp/soshiki/8/27111.html"
+    },
+    {
+      "id": "suido-jorei",
+      "title": "久万高原町給水条例の一部改正案（新旧対照表）",
+      "url": "https://www.kumakogen.jp/uploaded/attachment/15391.pdf",
+      "page": "https://www.kumakogen.jp/soshiki/8/27111.html"
+    }
+  ]
+}

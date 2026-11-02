@@ -10,7 +10,9 @@
     "sfx": "python scripts/synth_audio.py",
     "studio": "remotion studio",
     "render": "remotion render Episode out/episode.mp4",
-    "still": "remotion still Episode out/still.png --frame=60"
+    "still": "remotion still Episode out/still.png --frame=60",
+    "fetch": "tsx scripts/fetch-sources.ts",
+    "generate": "tsx scripts/generate.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.3.0",

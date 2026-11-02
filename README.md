@@ -12,23 +12,33 @@ Prototype. One hand-written sample episode (fictional data) renders end to end.
 
 ## Run
 
-Requirements: Node.js 20+, Python 3.11+ with `edge-tts`.
+Requirements: Node.js 22+, Python 3.11+ with `edge-tts`, and an Anthropic API key in `.env` (`ANTHROPIC_API_KEY=...`) for the newsroom step.
 
 ```bash
 npm install
-npm run sfx      # synthesize sound effects and BGM into public/audio/
-npm run tts      # narration audio + word timings into public/audio/
-npm run render   # out/episode.mp4
+npm run sfx                                   # synthesize sound effects and BGM into public/audio/
+npm run fetch -- kumakogen                    # download the town's public documents into sources/
+npm run generate -- kumakogen                 # Claude newsroom → episodes/kumakogen-<date>-general.json
+npm run tts -- episodes/<episode>.json        # narration audio + word timings into public/
+npm run render                                # out/episode.mp4
 ```
 
-`npm run studio` opens the Remotion preview.
+`npm run tts -- episodes/sample-kyushokuhi.json` renders the hand-written sample without an API key. `npm run studio` opens the Remotion preview.
 
 ## How it works
 
-1. `episodes/*.json` describes an episode: scenes, spoken lines, on-screen telop text, emphasis words and the source document.
+1. **Newsroom** (`scripts/generate.ts`, Claude Opus 5.5):
+   - *Desk* reads the town's PDFs and ranks items by how much they change residents' lives (structured output).
+   - *Facts* extracts the facts for the chosen item with page-level citations (Citations API).
+   - *Writer* turns the facts into an episode in the renderer's schema (`src/schema.ts`, structured output). Every anchor line lists the fact IDs it relies on.
+   - *Checks*: code verifies every number on screen comes from a cited fact and telop rows fit; a *fact checker* agent reviews accuracy, neutrality and proposal-vs-decided wording. Failures go back to the writer for one revision.
 2. `scripts/tts.py` synthesizes each line and records word timings.
 3. `src/timeline.ts` derives scene lengths from the audio, so the episode JSON never contains timestamps.
-4. Remotion renders the scenes (`src/Scenes.tsx`) with pixel-art characters whose mouths follow the narration volume.
+4. Remotion renders the scenes (`src/Scenes.tsx`): three layouts and six animated visuals, pixel-art characters whose mouths follow the narration, and the source page under every line.
+
+## Data sources
+
+City configs in `cities/` list the public documents used. Kumakogen (愛媛県久万高原町) publishes its website content under the 公共データ利用規約 (PDL1.0); videos credit the source and note that it was edited. Downloaded documents are not committed.
 
 ## Credits
 
