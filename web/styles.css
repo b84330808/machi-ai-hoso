@@ -921,3 +921,11 @@ select {
     width: min(100%, 380px);
   }
 }
+
+.static-note {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  background: #fff6d6;
+  border-left: 4px solid var(--shu);
+  font-size: 14px;
+}

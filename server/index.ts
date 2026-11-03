@@ -11,12 +11,12 @@ import path from "node:path";
 import { createServer as createVite } from "vite";
 import { listCities } from "../scripts/city";
 import type { Audience, JobEvent } from "../scripts/events";
-import { isVoiced, mp4File, render, voice } from "../scripts/media";
+import { listEpisodes, readEpisode } from "../scripts/library";
+import { mp4File, render, voice } from "../scripts/media";
 import { hasApiKey, runNewsroom } from "../scripts/newsroom";
 
 const PORT = Number(process.env.PORT ?? 5173);
 const AUDIENCES: Audience[] = ["general", "parents", "seniors", "easy"];
-const EPISODE_ID = /^(.+)-(\d{4}-\d{2}-\d{2})-(general|parents|seniors|easy)$/;
 
 /* ---------- Jobs ---------- */
 
@@ -54,27 +54,6 @@ const voiceStep = async (episodeId: string, emit: (e: JobEvent) => void) => {
   await voice(episodeId, (lineId) => emit({ type: "voiced", lineId, done: ++done, total }));
   emit({ type: "step", step: "voice", state: "done" });
   return episodeId;
-};
-
-/* ---------- Episodes on disk ---------- */
-
-const listEpisodes = () =>
-  fs
-    .readdirSync("episodes")
-    .filter((f) => f.endsWith(".json") && !f.endsWith(".facts.json"))
-    .map((f) => {
-      const id = path.basename(f, ".json");
-      const m = id.match(EPISODE_ID);
-      const { title } = JSON.parse(fs.readFileSync(path.join("episodes", f), "utf-8"));
-      return { id, cityId: m?.[1] ?? null, date: m?.[2] ?? null, audience: m?.[3] ?? null, title, voiced: isVoiced(id), mp4: fs.existsSync(mp4File(id)) };
-    });
-
-const readEpisode = (id: string) => {
-  const factsFile = path.join("episodes", `${id}.facts.json`);
-  return {
-    episode: JSON.parse(fs.readFileSync(path.join("episodes", `${id}.json`), "utf-8")),
-    ...(fs.existsSync(factsFile) ? JSON.parse(fs.readFileSync(factsFile, "utf-8")) : { story: null, facts: [] }),
-  };
 };
 
 /* ---------- HTTP ---------- */

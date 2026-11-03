@@ -1,7 +1,7 @@
 import type { PlayerRef } from "@remotion/player";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { Audience } from "../scripts/events";
-import { api, AppState, AUDIENCE_LABELS, EpisodeDetail, followJob } from "./api";
+import type { Audience, JobEvent } from "../scripts/events";
+import { api, AppState, AUDIENCE_LABELS, EpisodeDetail, followJob, replayRun, STATIC } from "./api";
 import { currentStep, Feed, Rundown, TimedEvent } from "./Progress";
 import { Phone, Transcript, useTimeline } from "./Result";
 
@@ -34,6 +34,10 @@ export const App = () => {
     .sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""))
     .at(-1);
   const cityHasRun = !!state?.episodes.some((e) => e.cityId === cityId);
+  const replayable = state?.episodes
+    .filter((e) => e.cityId === cityId && e.audience === audience && e.hasLog && e.voiced)
+    .sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""))
+    .at(-1);
 
   // Picking a city and audience shows the latest finished episode for them.
   useEffect(() => {
@@ -47,14 +51,14 @@ export const App = () => {
     if (episodeId) api.episode(episodeId).then(setDetail);
   }, [episodeId]);
 
-  const startJob = async (start: () => Promise<{ jobId: string }>) => {
+  /** Shows a job's events as they arrive, from the server or from a recorded run. */
+  const startJob = async (follow: (onEvent: (e: JobEvent) => void) => Promise<unknown>) => {
     setBusy(true);
     setEvents([]);
     setTab("log");
     setEpisodeId(null);
     try {
-      const { jobId } = await start();
-      followJob(jobId, (e) => {
+      await follow((e) => {
         setEvents((prev) => [...prev, { ...e, at: Date.now() }]);
         if (e.type === "done") {
           refresh().then(() => {
@@ -71,8 +75,15 @@ export const App = () => {
     }
   };
 
-  const make = () => startJob(() => api.make(cityId, audience, cityHasRun && reuseFacts));
-  const voiceOnly = () => existing && startJob(() => api.voice(existing.id));
+  const viaServer = (start: () => Promise<{ jobId: string }>) => async (onEvent: (e: JobEvent) => void) => followJob((await start()).jobId, onEvent);
+  const make = () => startJob(viaServer(() => api.make(cityId, audience, cityHasRun && reuseFacts)));
+  const voiceOnly = () => existing && startJob(viaServer(() => api.voice(existing.id)));
+  const replay = () =>
+    replayable &&
+    startJob(async (onEvent) => {
+      const [log, detail] = await Promise.all([api.log(replayable.id), api.episode(replayable.id)]);
+      replayRun(log, detail.episode.scenes.flatMap((s) => s.lines).length, onEvent);
+    });
 
   const exportMp4 = async () => {
     if (!episodeId) return;
@@ -100,7 +111,7 @@ export const App = () => {
         <div className="mast-right">
           <span className="mast-meta">
             {todayLabel}
-            {state && <> ／ {state.hasApiKey ? "Claude API 接続中" : "再生のみ（API キー未設定）"}</>}
+            {state && <> ／ {STATIC ? "公開デモ版（記録の再生）" : state.hasApiKey ? "Claude API 接続中" : "再生のみ（API キー未設定）"}</>}
           </span>
           <span className={`onair onair-${lamp}`}>{lamp === "rec" ? "制作中" : "ON AIR"}</span>
         </div>
@@ -129,7 +140,11 @@ export const App = () => {
                 ))}
               </div>
             </div>
-            {needsVoice ? (
+            {STATIC ? (
+              <button className="go" onClick={replay} disabled={!replayable || busy} title={replayable ? undefined : "この組み合わせには取材の記録がありません"}>
+                {busy ? "再生中…" : "取材の記録を再生"}
+              </button>
+            ) : needsVoice ? (
               <button className="go" onClick={voiceOnly} disabled={busy}>
                 声を入れて再生
               </button>
@@ -153,7 +168,7 @@ export const App = () => {
                 </a>
               </span>
             )}
-            {state?.hasApiKey && cityHasRun && (
+            {!STATIC && state?.hasApiKey && cityHasRun && (
               <label className="check">
                 <input type="checkbox" checked={reuseFacts} onChange={(e) => setReuseFacts(e.target.checked)} disabled={busy} />
                 前回の取材メモを使う（台本だけ書き直す）
@@ -179,8 +194,17 @@ export const App = () => {
               {events.length === 0 && !timeline && (
                 <div className="howto">
                   <h2>この放送局のしくみ</h2>
+                  {STATIC && (
+                    <p className="static-note">
+                      これは公開デモ版です。新しいニュースはつくらず、実際に Claude が取材したときの記録を再生します（待ち時間は短縮）。ニュースを新しくつくるには、
+                      <a href="https://github.com/b84330808/machi-ai-hoso" target="_blank" rel="noreferrer">
+                        リポジトリ
+                      </a>
+                      の手順でローカル版を動かしてください。
+                    </p>
+                  )}
                   <ol>
-                    <li>自治体と、見る人を選んで「取材をはじめる」を押します。</li>
+                    <li>自治体と、見る人を選んで「{STATIC ? "取材の記録を再生" : "取材をはじめる"}」を押します。</li>
                     <li>Claude のデスク・記者・構成作家・校閲が、町の公開資料からニュースを一本つくります。</li>
                     <li>できた動画のセリフは、どれも元資料のページにつながっています。</li>
                   </ol>
@@ -212,7 +236,7 @@ export const App = () => {
             </div>
           )}
         </div>
-        {episodeId && timeline && (
+        {!STATIC && episodeId && timeline && (
           <div className="export">
             {rendering === "done" ? (
               <a className="button" href={`/out/${episodeId}.mp4`} download>

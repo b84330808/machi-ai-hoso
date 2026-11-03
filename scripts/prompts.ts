@@ -28,7 +28,7 @@ Hard rules:
 - Stay neutral: no opinions, no persuasion, no sensational words such as 衝撃, ヤバい, 大幅 or 急騰.
 - telop: the on-screen version of text, 13 characters per line max, split with \\n at natural phrase boundaries, at most 3 lines.
 - emphasis: substrings that appear exactly in telop. Visual "at" fields: a word that appears exactly in text.
-- yomi: the same sentence for the speech engine. Keep kanji and numbers as they are, because the engine needs kanji to get the accent right; never rewrite the whole sentence in kana. Replace only what it may misread: symbols and units (㎥ → 立方メートル, ㎜ → ミリ, 1〜2人 → 1人から2人), place and facility names (in kana, e.g. 久万高原町 → くまこうげんちょう), and ambiguous readings (1食 → いっしょく). Omit yomi when nothing needs replacing.
+- yomi: the same sentence for the speech engine. Keep kanji and numbers as they are, because the engine needs kanji to get the accent right; never rewrite the whole sentence in kana. Replace only what it may misread: symbols and units (㎥ → 立方メートル, ㎜ → ミリ, 1〜2人 → 1人から2人), place and facility names (in kana, e.g. 久万高原町 → くまこうげんちょう), and ambiguous readings (1食 → いっしょく; 町 meaning the town office, as in 町は〜としています → ちょうは). Omit yomi when nothing needs replacing.
 - Use the city name, date and source title given in the request.`;
 
 export const REVIEW_SYSTEM = `You are the fact checker of まちのAI放送局. You receive an episode script and the list of cited facts.

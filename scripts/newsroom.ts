@@ -262,8 +262,17 @@ const finalize = (draft: Episode, facts: Fact[], city: CityConfig, date: string)
 
 const lineCount = (episode: Episode) => episode.scenes.flatMap((s) => s.lines).length;
 
-/** Runs the whole newsroom and writes episodes/<episodeId>.json and .facts.json. */
-export const runNewsroom = async (opts: NewsroomOptions, emit: Emit): Promise<string> => {
+/**
+ * Runs the whole newsroom and writes episodes/<episodeId>.json and .facts.json, plus .log.json: every progress
+ * event with its time, which the public playback build replays.
+ */
+export const runNewsroom = async (opts: NewsroomOptions, report: Emit): Promise<string> => {
+  const started = Date.now();
+  const log: { at: number; event: JobEvent }[] = [];
+  const emit: Emit = (event) => {
+    log.push({ at: (Date.now() - started) / 1000, event });
+    report(event);
+  };
   const city = loadCity(opts.cityId);
   const client = new Anthropic();
 
@@ -331,5 +340,6 @@ export const runNewsroom = async (opts: NewsroomOptions, emit: Emit): Promise<st
   const final = Episode.parse(finalize(episode, facts, city, opts.date));
   fs.writeFileSync(path.join("episodes", `${episodeId}.json`), JSON.stringify(final, null, 2));
   fs.writeFileSync(path.join("episodes", `${episodeId}.facts.json`), JSON.stringify({ story, facts, remainingIssues: issues }, null, 2));
+  fs.writeFileSync(path.join("episodes", `${episodeId}.log.json`), JSON.stringify({ episodeId, events: log }));
   return episodeId;
 };

@@ -26,6 +26,14 @@ npm run app      # http://localhost:5173
 
 Without an API key the app still plays episodes that already exist in `episodes/` (it records the narration on first play).
 
+### Playback build (no server, no API key)
+
+```bash
+npm run build:static   # dist/: a static site for GitHub Pages or any static host
+```
+
+The same interface, reading pre-built data. It plays every voiced episode, and 取材の記録を再生 replays a newsroom run recorded while that episode was made (`episodes/<id>.log.json`: every progress event with its time; long waits are shortened). It cannot make new episodes.
+
 ## Command line
 
 ```bash
