@@ -22,7 +22,7 @@ const fit = (text: string, maxWidth: number, base: number, lines = 1) => {
   return Math.min(base, Math.floor((maxWidth * lines) / Math.max(ems, 1)));
 };
 
-const Sfx: React.FC<{ at: number; name: "pop" | "ding" | "whoosh" | "stamp"; volume?: number }> = ({ at, name, volume = 0.5 }) => (
+const Sfx: React.FC<{ at: number; name: "pop" | "ding" | "tap" | "stamp"; volume?: number }> = ({ at, name, volume = 0.5 }) => (
   <Sequence from={Math.max(0, Math.round(at))} durationInFrames={30} layout="none">
     <Audio src={staticFile(`audio/sfx_${name}.wav`)} volume={volume} />
   </Sequence>
@@ -146,7 +146,7 @@ const CounterV: React.FC<VisualProps<"counter">> = ({ visual, line, isFirst }) =
         />
         {visual.note && <div style={{ fontSize: fit(visual.note, 700, 38, 2), color: "#666", marginTop: 10, padding: "0 30px", lineHeight: 1.3 }}>{visual.note}</div>}
       </Card>
-      {!isFirst && <Sfx at={line.start - 6} name="whoosh" volume={0.35} />}
+      {!isFirst && <Sfx at={line.start - 6} name="tap" volume={0.33} />}
       <Sfx at={countStart + frames} name="ding" volume={0.45} />
     </>
   );
@@ -199,7 +199,7 @@ const CardV: React.FC<VisualProps<"card">> = ({ visual, line, isFirst }) => {
         </div>
         {visual.note && <div style={{ fontSize: fit(visual.note, 740, 40, 2), color: "#666", marginTop: 16, padding: "0 30px", lineHeight: 1.3 }}>{visual.note}</div>}
       </Card>
-      <Sfx at={line.start - 4} name="whoosh" volume={0.35} />
+      <Sfx at={line.start - 4} name="tap" volume={0.33} />
     </>
   );
 };
@@ -428,6 +428,6 @@ const DeskLayout: React.FC<{ scene: TimedScene }> = ({ scene }) => (
 export const SceneView: React.FC<{ scene: TimedScene; index: number }> = ({ scene, index }) => (
   <AbsoluteFill>
     {scene.layout === "skit" ? <SkitLayout scene={scene} /> : scene.layout === "anchor" ? <AnchorLayout scene={scene} /> : <DeskLayout scene={scene} />}
-    {index > 0 && <Sfx at={0} name="whoosh" volume={0.4} />}
+    {index > 0 && <Sfx at={0} name="tap" volume={0.33} />}
   </AbsoluteFill>
 );

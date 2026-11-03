@@ -12,7 +12,7 @@ const { values, positionals } = parseArgs({
   options: {
     audience: { type: "string", default: "general" },
     hint: { type: "string" },
-    date: { type: "string", default: new Date().toISOString().slice(0, 10) },
+    date: { type: "string", default: new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" }) },
     "reuse-facts": { type: "boolean", default: false },
   },
 });

@@ -53,14 +53,16 @@ def ding() -> list[float]:
     ]
 
 
-def whoosh() -> list[float]:
-    rng = random.Random(7)
-    n = int(RATE * 0.35)
-    out, low = [], 0.0
+def tap() -> list[float]:
+    """Scene changes and cards sliding in: a short rounded tap (sine with a quick pitch drop)."""
+    n = int(RATE * 0.09)
+    out, phase = [], 0.0
     for i in range(n):
-        cutoff = 0.05 + 0.4 * math.sin(math.pi * i / n)
-        low += cutoff * (rng.uniform(-1, 1) - low)
-        out.append(low * math.sin(math.pi * i / n) * 1.5)
+        x = i / n
+        freq = 1150 - 450 * x
+        phase += 2 * math.pi * freq / RATE
+        env = min(1.0, i / (0.002 * RATE)) * (1 - x) ** 4
+        out.append(math.sin(phase) * env * 0.9)
     return out
 
 
@@ -125,7 +127,7 @@ def bgm() -> list[float]:
 if __name__ == "__main__":
     write_wav("sfx_pop.wav", pop())
     write_wav("sfx_ding.wav", ding())
-    write_wav("sfx_whoosh.wav", whoosh())
+    write_wav("sfx_tap.wav", tap())
     write_wav("sfx_stamp.wav", stamp())
     write_wav("bgm.wav", bgm())
-    print("wrote sfx_pop, sfx_ding, sfx_whoosh, sfx_stamp, bgm to", OUT_DIR)
+    print("wrote sfx_pop, sfx_ding, sfx_tap, sfx_stamp, bgm to", OUT_DIR)

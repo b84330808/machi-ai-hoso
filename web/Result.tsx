@@ -34,6 +34,8 @@ export const Phone: FC<{ episodeId: string; timeline: Timeline; playerRef: RefOb
     controls
     autoPlay
     clickToPlay
+    // BGM, narration and several overlapping sound effects can play at once; the default of 5 is too few.
+    numberOfSharedAudioTags={16}
     acknowledgeRemotionLicense
   />
 );
