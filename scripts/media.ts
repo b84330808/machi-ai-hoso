@@ -16,7 +16,13 @@ const run = (command: string, args: string[], onLine: (line: string) => void) =>
     child.stdout.on("data", read);
     child.stderr.on("data", read);
     child.on("error", reject);
-    child.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`${command} exited with ${code}\n${tail}`))));
+    child.on("close", (code) => {
+      if (code === 0) return resolve();
+      console.error(tail);
+      // The UI shows only the last line, which for Python and Remotion holds the actual error.
+      const last = tail.trim().split(/[\r\n]+/).at(-1) ?? "";
+      reject(new Error(`${path.basename(command)} exited with ${code}: ${last}`));
+    });
   });
 
 export const episodeFile = (episodeId: string) => path.join("episodes", `${episodeId}.json`);

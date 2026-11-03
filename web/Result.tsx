@@ -45,6 +45,26 @@ const clock = (frame: number) => {
 
 const SPEAKER = { anchor: "マチコ", kid: "ソウタ" } as const;
 
+const toFullWidth = (s: string) => s.replace(/[0-9,]/g, (c) => String.fromCharCode(c.charCodeAt(0) + 0xfee0));
+
+/**
+ * The part of the cited text around a number the line mentions. Citations from tables can run to a whole
+ * page of cells, so long quotes are cut to a window around the first match.
+ */
+const quoteFor = (text: string, quotes: string[], half = 34) => {
+  const numbers = text.normalize("NFKC").match(/\d[\d,]*/g) ?? [];
+  for (const raw of quotes) {
+    const quote = raw.replace(/\s+/g, " ");
+    const at = numbers.flatMap((n) => [quote.indexOf(n), quote.indexOf(toFullWidth(n))]).find((i) => i >= 0);
+    if (at === undefined) continue;
+    const start = Math.max(0, at - half);
+    const end = Math.min(quote.length, at + half);
+    return `${start > 0 ? "…" : ""}${quote.slice(start, end)}${end < quote.length ? "…" : ""}`;
+  }
+  const first = quotes[0]?.replace(/\s+/g, " ");
+  return first && first.length > half * 2 ? `${first.slice(0, half * 2)}…` : first;
+};
+
 /** The script line by line, following playback; each line links to the PDF page it came from. */
 export const Transcript: FC<{ timeline: Timeline; detail: EpisodeDetail | null; city: CityConfig | undefined; playerRef: RefObject<PlayerRef | null> }> = ({
   timeline,
@@ -72,7 +92,10 @@ export const Transcript: FC<{ timeline: Timeline; detail: EpisodeDetail | null; 
     <ol className="transcript">
       {timeline.lines.map((line) => {
         const link = sourceLink(city, line.sourceRef);
-        const quote = line.factIds?.map((id) => facts.get(id)?.quote).find(Boolean);
+        const quote = quoteFor(
+          line.text,
+          (line.factIds ?? []).map((id) => facts.get(id)?.quote).filter((q): q is string => !!q),
+        );
         return (
           <li
             key={line.id}

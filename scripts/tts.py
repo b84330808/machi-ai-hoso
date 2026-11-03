@@ -27,7 +27,12 @@ VOICES = {
 }
 
 
-async def synthesize(line: dict, out_dir: Path) -> dict:
+# A few parallel connections are fast enough; opening one per line at once can fail DNS lookups on Windows.
+PARALLEL = 4
+RETRIES = 4
+
+
+async def stream_line(line: dict) -> tuple[bytearray, list[dict]]:
     params = VOICES[line["speaker"]]
     communicate = edge_tts.Communicate(
         line.get("yomi", line["text"]),
@@ -49,14 +54,30 @@ async def synthesize(line: dict, out_dir: Path) -> dict:
                     "end": (chunk["offset"] + chunk["duration"]) / TICKS_PER_SECOND,
                 }
             )
+    return audio, words
+
+
+async def synthesize(line: dict, out_dir: Path, slots: asyncio.Semaphore) -> dict:
+    async with slots:
+        for attempt in range(1, RETRIES + 1):
+            try:
+                audio, words = await stream_line(line)
+                break
+            except Exception as err:  # network errors from aiohttp / edge-tts
+                if attempt == RETRIES:
+                    raise RuntimeError(f"{line['id']}: narration failed after {RETRIES} tries ({err})") from err
+                await asyncio.sleep(attempt * 1.5)
     path = out_dir / f"{line['id']}.mp3"
     path.write_bytes(audio)
-    return {
+    result = {
         "id": line["id"],
         "file": path.relative_to(ROOT / "public").as_posix(),
         "duration": len(audio) * 8 / MP3_BITRATE,
         "words": words,
     }
+    # One line per finished narration; the web app counts these for its progress meter.
+    print(f"{result['id']}: {result['duration']:.2f}s, {len(words)} words", flush=True)
+    return result
 
 
 async def main(episode_path: Path) -> None:
@@ -70,14 +91,13 @@ async def main(episode_path: Path) -> None:
         json.dumps(episode, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     lines = [line for scene in episode["scenes"] for line in scene["lines"]]
-    results = await asyncio.gather(*(synthesize(line, out_dir) for line in lines))
+    slots = asyncio.Semaphore(PARALLEL)
+    results = await asyncio.gather(*(synthesize(line, out_dir, slots) for line in lines))
     manifest = {r["id"]: r for r in results}
     # Written last: its presence means the episode is ready to play.
     (out_dir / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
     )
-    for r in results:
-        print(f"{r['id']}: {r['duration']:.2f}s, {len(r['words'])} words", flush=True)
 
 
 if __name__ == "__main__":

@@ -360,6 +360,7 @@ select {
 .sheet-body {
   flex: 1;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   padding: 6px 26px 22px;
   background: var(--paper-light);
@@ -520,6 +521,15 @@ select {
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
 }
 
+/* Citations can quote a whole block; two lines are enough to show where a fact came from. */
+.memo-quote,
+.t-quote {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .memo-quote {
   font-family: var(--mincho);
   font-size: 12.5px;
@@ -573,6 +583,34 @@ select {
   to {
     clip-path: inset(0 0 0 0);
   }
+}
+
+.revision + .revision {
+  margin-top: 14px;
+}
+
+.revision-head {
+  margin: 0 0 6px;
+  font-family: var(--mincho);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+}
+
+.revision .genko-line > div {
+  min-width: 0;
+}
+
+.revision .genko-line + .genko-line {
+  margin-top: 8px;
+}
+
+.struck {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  text-decoration: line-through 2px var(--shu);
 }
 
 /* Checker: red pen and the approval stamp */

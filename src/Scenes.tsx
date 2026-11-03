@@ -13,6 +13,15 @@ type VisualProps<T extends Visual["type"]> = { visual: VisualOf<T>; line: TimedL
 
 const formatNumber = (n: number) => Math.round(n).toLocaleString("ja-JP");
 
+/**
+ * Font size that fits generated text into a box: full-width characters are about 1em wide, others about 0.58em.
+ * With lines > 1 the text may wrap, so it gets that many times the width.
+ */
+const fit = (text: string, maxWidth: number, base: number, lines = 1) => {
+  const ems = [...text].reduce((sum, c) => sum + (c.charCodeAt(0) > 0xff ? 1 : 0.58), 0);
+  return Math.min(base, Math.floor((maxWidth * lines) / Math.max(ems, 1)));
+};
+
 const Sfx: React.FC<{ at: number; name: "pop" | "ding" | "whoosh" | "stamp"; volume?: number }> = ({ at, name, volume = 0.5 }) => (
   <Sequence from={Math.max(0, Math.round(at))} durationInFrames={30} layout="none">
     <Audio src={staticFile(`audio/sfx_${name}.wav`)} volume={volume} />
@@ -88,22 +97,23 @@ const StampV: React.FC<VisualProps<"stamp">> = ({ visual, line }) => {
   const shake = shaking ? (random(`shake-${frame}`) - 0.5) * 24 : 0;
   return (
     <div style={{ position: "absolute", inset: 0, transform: `translate(${shake}px, ${shake / 2}px)` }}>
-      <Card style={{ left: 110, top: 225, width: 860, height: 290, borderColor: colors.red, transform: `scale(${interpolate(stamp, [0, 1], [2.4, 1])}) rotate(-4deg)`, opacity: stamp > 0.01 ? 1 : 0 }}>
-        <div style={{ fontSize: 80, lineHeight: 1.1 }}>{visual.label}</div>
-        <div style={{ fontSize: 170, lineHeight: 1, color: colors.red, whiteSpace: "nowrap" }}>{visual.big}</div>
+      <Card style={{ left: 110, top: 245, width: 860, height: 285, paddingTop: 36, borderColor: colors.red, transform: `scale(${interpolate(stamp, [0, 1], [2.4, 1])}) rotate(-4deg)`, opacity: stamp > 0.01 ? 1 : 0 }}>
+        <div style={{ fontSize: fit(visual.label, 780, 80), lineHeight: 1.15, whiteSpace: "nowrap" }}>{visual.label}</div>
+        <div style={{ fontSize: fit(visual.big, 780, 170), lineHeight: 1, color: colors.red, whiteSpace: "nowrap" }}>{visual.big}</div>
       </Card>
       <div
         style={{
           position: "absolute",
           left: 120,
-          top: 190,
+          top: 180,
           padding: "8px 28px",
           background: colors.yellow,
           border: `8px solid ${colors.ink}`,
           fontFamily: bodyFont,
           fontWeight: 900,
-          fontSize: 52,
+          fontSize: fit(visual.tag, 780, 52),
           color: colors.ink,
+          whiteSpace: "nowrap",
           transform: `scale(${tag}) rotate(-3deg)`,
         }}
       >
@@ -123,9 +133,18 @@ const CounterV: React.FC<VisualProps<"counter">> = ({ visual, line, isFirst }) =
     <>
       <Card style={{ left: 140, top: 220, width: 800, height: 540, transform }}>
         {visual.icon && <PixelIcon name={visual.icon} size={110} />}
-        <div style={{ fontSize: 56, marginTop: 6 }}>{visual.label}</div>
-        <CountUp from={visual.from} to={visual.to} start={countStart} frames={frames} prefix={visual.prefix} unit={visual.unit} color={isFirst ? colors.blue : colors.red} size={140} />
-        {visual.note && <div style={{ fontSize: 38, color: "#666", marginTop: 10 }}>{visual.note}</div>}
+        <div style={{ fontSize: fit(visual.label, 700, 56), marginTop: 6, whiteSpace: "nowrap" }}>{visual.label}</div>
+        <CountUp
+          from={visual.from}
+          to={visual.to}
+          start={countStart}
+          frames={frames}
+          prefix={visual.prefix}
+          unit={visual.unit}
+          color={isFirst ? colors.blue : colors.red}
+          size={fit(`${visual.prefix ?? ""}${formatNumber(Math.max(visual.from, visual.to))}${visual.unit}`, 700, 140)}
+        />
+        {visual.note && <div style={{ fontSize: fit(visual.note, 700, 38, 2), color: "#666", marginTop: 10, padding: "0 30px", lineHeight: 1.3 }}>{visual.note}</div>}
       </Card>
       {!isFirst && <Sfx at={line.start - 6} name="whoosh" volume={0.35} />}
       <Sfx at={countStart + frames} name="ding" volume={0.45} />
@@ -173,12 +192,12 @@ const CardV: React.FC<VisualProps<"card">> = ({ visual, line, isFirst }) => {
   const border = visual.icon === "warning" ? colors.orange : visual.icon === "check" ? colors.green : colors.blue;
   return (
     <>
-      <Card style={{ left: 120, top: isFirst ? 300 : 520, width: 840, height: 280, borderColor: border, transform: `translateY(${interpolate(enter, [0, 1], [800, 0])}px)` }}>
+      <Card style={{ left: 120, top: 300, width: 840, height: 300, borderColor: border, transform: `translateY(${interpolate(enter, [0, 1], [isFirst ? 800 : -800, 0])}px)` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
           <PixelIcon name={visual.icon} size={100} />
-          <div style={{ fontSize: 66 }}>{visual.title}</div>
+          <div style={{ fontSize: fit(visual.title, 620, 66), whiteSpace: "nowrap" }}>{visual.title}</div>
         </div>
-        {visual.note && <div style={{ fontSize: 40, color: "#666", marginTop: 16 }}>{visual.note}</div>}
+        {visual.note && <div style={{ fontSize: fit(visual.note, 740, 40, 2), color: "#666", marginTop: 16, padding: "0 30px", lineHeight: 1.3 }}>{visual.note}</div>}
       </Card>
       <Sfx at={line.start - 4} name="whoosh" volume={0.35} />
     </>
@@ -192,7 +211,7 @@ const PointsV: React.FC<VisualProps<"points">> = ({ visual, line }) => {
   const items = visual.items.slice(0, 3);
   return (
     <>
-      <div style={{ position: "absolute", top: 200, width: "100%", textAlign: "center", fontFamily: pixelFont, fontSize: 88, color: colors.yellow, textShadow: outline(colors.ink, 6), transform: `scale(${title})` }}>
+      <div style={{ position: "absolute", top: 200, width: "100%", textAlign: "center", fontFamily: pixelFont, fontSize: fit(visual.title, 900, 88), color: colors.yellow, textShadow: outline(colors.ink, 6), whiteSpace: "nowrap", transform: `scale(${title})` }}>
         {visual.title}
       </div>
       {items.map((item, i) => {
@@ -203,9 +222,9 @@ const PointsV: React.FC<VisualProps<"points">> = ({ visual, line }) => {
             key={i}
             style={{
               position: "absolute",
-              left: 190,
+              left: 120,
               top: 340 + i * 150,
-              width: 580,
+              width: 760,
               height: 120,
               display: "flex",
               alignItems: "center",
@@ -217,13 +236,13 @@ const PointsV: React.FC<VisualProps<"points">> = ({ visual, line }) => {
               padding: "0 24px",
               fontFamily: bodyFont,
               fontWeight: 900,
-              fontSize: 56,
+              fontSize: fit(item.text, 580, 56),
               color: colors.ink,
               whiteSpace: "nowrap",
               transform: `translateX(${interpolate(pop, [0, 1], [900, 0])}px)`,
             }}
           >
-            <div style={{ flexShrink: 0, width: 76, height: 76, borderRadius: 38, background: colors.red, color: colors.white, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48 }}>{i + 1}</div>
+            <div style={{ flexShrink: 0, width: 76, height: 76, borderRadius: 38, background: colors.red, color: colors.white, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, lineHeight: 1 }}>{i + 1}</div>
             {item.text}
             <Sfx at={at} name="pop" volume={0.4} />
           </div>
@@ -297,14 +316,39 @@ const PushIn: React.FC<{ duration: number; children: React.ReactNode }> = ({ dur
   );
 };
 
-/** Visuals of every line that has started so far, stacked in order. */
+const ENTER = 8;
+const EXIT = 10;
+
+/** Slides a visual out to the left once the next one starts; `at` is undefined for the scene's last visual. */
+const Leaving: React.FC<{ at?: number; children: React.ReactNode }> = ({ at, children }) => {
+  const frame = useCurrentFrame();
+  if (at === undefined) return <AbsoluteFill>{children}</AbsoluteFill>;
+  const t = interpolate(frame, [at, at + EXIT], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: Easing.in(Easing.cubic) });
+  return <AbsoluteFill style={{ transform: `translateX(${-1100 * t}px)`, opacity: 1 - t }}>{children}</AbsoluteFill>;
+};
+
+/**
+ * One main visual on screen at a time: each enters with its line and pushes the previous one out, so generated
+ * scenes never stack cards on top of each other. Question marks are small overlays and stay.
+ */
 const Visuals: React.FC<{ scene: TimedScene }> = ({ scene }) => {
   const frame = useCurrentFrame();
-  const withVisual = scene.lines.filter((l) => l.visual);
+  const main = scene.lines.filter((l) => l.visual && l.visual.type !== "question");
+  const questions = scene.lines.filter((l) => l.visual?.type === "question");
   return (
     <>
-      {withVisual.map((line, i) =>
-        frame >= line.start - 8 ? <VisualView key={line.id} visual={line.visual!} line={line} isFirst={i === 0} layoutName={scene.layout} /> : null,
+      {main.map((line, i) => {
+        const next = main[i + 1];
+        const leaveAt = next ? next.start - ENTER : undefined;
+        if (frame < line.start - ENTER || (leaveAt !== undefined && frame >= leaveAt + EXIT)) return null;
+        return (
+          <Leaving key={line.id} at={leaveAt}>
+            <VisualView visual={line.visual!} line={line} isFirst={i === 0} layoutName={scene.layout} />
+          </Leaving>
+        );
+      })}
+      {questions.map((line) =>
+        frame >= line.start - ENTER ? <VisualView key={line.id} visual={line.visual!} line={line} isFirst={false} layoutName={scene.layout} /> : null,
       )}
     </>
   );

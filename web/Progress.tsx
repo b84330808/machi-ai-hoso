@@ -118,7 +118,7 @@ const FactList: FC<{ facts: Fact[] }> = ({ facts }) => (
 
 const ISSUE_BY: Record<Issue["by"], string> = { numbers: "数字", reviewer: "校閲" };
 
-const Corrections: FC<{ issues: Issue[]; round: number }> = ({ issues, round }) =>
+const Corrections: FC<{ issues: Issue[]; round: number; final?: boolean }> = ({ issues, round, final }) =>
   issues.length === 0 ? (
     <div className="passed">
       <span className="hanko">校閲済</span>
@@ -132,9 +132,51 @@ const Corrections: FC<{ issues: Issue[]; round: number }> = ({ issues, round }) 
           {issue.text}
         </li>
       ))}
-      {round === 2 && <p className="note">残った赤字は記録に残して公開します。</p>}
+      {final && <p className="note">残った赤字は記録に残して公開します。</p>}
     </ul>
   );
+
+type LineEvent = Extract<TimedEvent, { type: "line" }>;
+type IssuesEvent = Extract<TimedEvent, { type: "issues" }>;
+
+/** Each rewrite shows only the lines that changed: the old one struck through, the new one on manuscript paper. */
+const Revisions: FC<{ lines: LineEvent[]; issues: IssuesEvent[]; done: boolean }> = ({ lines, issues, done }) => {
+  const rounds = [...new Set(lines.map((l) => l.round))].filter((r) => r >= 2);
+  const lastRound = Math.max(0, ...issues.map((e) => e.round));
+  return (
+    <>
+      {rounds.map((round) => {
+        const prev = lines.filter((l) => l.round === round - 1);
+        const cur = lines.filter((l) => l.round === round);
+        const prevTexts = new Set(prev.map((l) => l.text));
+        const curTexts = new Set(cur.map((l) => l.text));
+        const changed = cur
+          .map((l, i) => ({ line: l, before: prev[i] && !curTexts.has(prev[i].text) ? prev[i].text : undefined }))
+          .filter(({ line }) => !prevTexts.has(line.text));
+        const roundIssues = issues.filter((e) => e.round === round);
+        return (
+          <div key={round} className="revision">
+            <p className="revision-head">
+              第{round}稿　{changed.length > 0 ? `${changed.length}行を書き直し` : "セリフの変更なし"}
+            </p>
+            {changed.map(({ line, before }, i) => (
+              <div key={i} className="genko-line">
+                <span className={`genko-speaker speaker-${line.speaker}`}>{SPEAKER[line.speaker]}</span>
+                <div>
+                  {before && <del className="struck">{before}</del>}
+                  <span className="genko-text">{fullWidth(line.text)}</span>
+                </div>
+              </div>
+            ))}
+            {roundIssues.map((e, i) => (
+              <Corrections key={i} {...e} final={done && round === lastRound} />
+            ))}
+          </div>
+        );
+      })}
+    </>
+  );
+};
 
 const Meter: FC<{ done: number; total: number }> = ({ done, total }) => (
   <div className="meter">
@@ -179,16 +221,7 @@ export const Feed: FC<{ events: TimedEvent[] }> = ({ events }) => {
     check: of("issues")
       .filter((e) => e.round === 1)
       .map((e, i) => <Corrections key={i} {...e} />),
-    revise: (
-      <>
-        <Manuscript lines={of("line").filter((l) => l.round === 2)} />
-        {of("issues")
-          .filter((e) => e.round === 2)
-          .map((e, i) => (
-            <Corrections key={i} {...e} />
-          ))}
-      </>
-    ),
+    revise: <Revisions lines={of("line")} issues={of("issues")} done={states.get("revise")?.state === "done"} />,
     voice: voiced && <Meter done={voiced.done} total={voiced.total} />,
   };
 

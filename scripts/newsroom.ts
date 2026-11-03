@@ -5,7 +5,7 @@
  *   facts    extracts facts with page-level citations (Citations API)
  *   writer   writes the episode in the renderer's schema (structured output, streamed)
  *   checks   numbers must come from cited facts; a fact checker reviews the script
- *   revise   one rewrite round if any check fails
+ *   revise   up to two rewrite rounds while any check fails
  *
  * Every step reports progress through `emit`, so the CLI and the web UI share this code.
  */
@@ -14,7 +14,7 @@ import path from "node:path";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
-import { Episode } from "../src/schema";
+import { Episode, type Line } from "../src/schema";
 import { CityConfig, docPath, fetchSources, loadCity } from "./city";
 import type { Audience, Fact, Issue, JobEvent, Story } from "./events";
 import { DESK_SYSTEM, FACTS_SYSTEM, REVIEW_SYSTEM, WRITER_SYSTEM } from "./prompts";
@@ -28,6 +28,7 @@ try {
 export const hasApiKey = () => !!process.env.ANTHROPIC_API_KEY;
 
 const MODEL = "claude-opus-5-5";
+const MAX_REVISIONS = 2;
 // Re-runs a declined request on a fallback model inside the same call.
 const FALLBACK = { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" as const };
 
@@ -181,7 +182,8 @@ const write = async (
 
 /* ---------- 4. Checks ---------- */
 
-const numbersIn = (s: string) => [...s.replaceAll(",", "").matchAll(/\d+(?:\.\d+)?/g)].map((m) => Number(m[0]));
+// NFKC turns full-width digits (common in municipal PDFs) into ASCII, so "１２月" and "12月" match.
+const numbersIn = (s: string) => [...s.normalize("NFKC").replaceAll(",", "").matchAll(/\d+(?:\.\d+)?/g)].map((m) => Number(m[0]));
 
 /** Numbers in speech, telops and visuals must come from the cited facts (or a formula shown on screen). */
 const checkNumbers = (episode: Episode, facts: Fact[]): Issue[] => {
@@ -198,12 +200,14 @@ const checkNumbers = (episode: Episode, facts: Fact[]): Issue[] => {
         if (n < 10 || allowed.has(n)) continue;
         issues.push(`${line.id}：「${n}」はどの事実にも出てこない数字。消すか、計算式をカウンターの note に書く`);
       }
+      const spoken = line.text.normalize("NFKC").length;
+      if (spoken > 45) issues.push(`${line.id}：セリフが${spoken}文字で長すぎる。40文字以内のセリフ2つに分ける`);
       for (const row of (line.telop ?? line.text).split("\n")) {
         if (row.length > 14) issues.push(`${line.id}：テロップ「${row}」が13文字を超えている`);
       }
     }
   }
-  return issues.map((text) => ({ by: "numbers", text }));
+  return [...new Set(issues)].map((text) => ({ by: "numbers", text }));
 };
 
 const Review = z.object({ issues: z.array(z.object({ lineId: z.string(), problem: z.string(), fix: z.string() })) });
@@ -225,9 +229,20 @@ const runChecks = async (client: Anthropic, episode: Episode, facts: Fact[]) => 
 
 /* ---------- 5. Finish ---------- */
 
-/** Stable ids for TTS file names, and a page citation under every line. */
-const finalize = (episode: Episode, facts: Fact[], city: CityConfig, date: string): Episode => {
+const halfWidthDigits = <T>(value: T): T => JSON.parse(JSON.stringify(value).replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0)));
+
+/** The cited fact that shares the most numbers with what the line shows; ties keep the writer's order. */
+const bestRef = (line: Line, byId: Map<string, Fact>) => {
+  const shown = new Set(numbersIn([line.text, line.telop ?? "", JSON.stringify(line.visual ?? {})].join(" ")));
+  const score = (f: Fact) => numbersIn(f.text).filter((n) => n >= 10 && shown.has(n)).length;
+  const cited = (line.factIds ?? []).map((id) => byId.get(id)).filter((f): f is Fact => !!f);
+  return [...cited].sort((a, b) => score(b) - score(a))[0]?.ref;
+};
+
+/** Stable ids for TTS file names, half-width digits, and the best page citation under every line. */
+const finalize = (draft: Episode, facts: Fact[], city: CityConfig, date: string): Episode => {
   const byId = new Map(facts.map((f) => [f.id, f]));
+  const episode = halfWidthDigits(draft);
   return {
     ...episode,
     city: city.city,
@@ -239,7 +254,7 @@ const finalize = (episode: Episode, facts: Fact[], city: CityConfig, date: strin
       lines: scene.lines.map((line, li) => ({
         ...line,
         id: `s${si + 1}l${li + 1}`,
-        sourceRef: line.factIds?.map((id) => byId.get(id)?.ref).find(Boolean),
+        sourceRef: bestRef(line, byId),
       })),
     })),
   };
@@ -301,10 +316,12 @@ export const runNewsroom = async (opts: NewsroomOptions, emit: Emit): Promise<st
 
   if (issues.length > 0) {
     emit({ type: "step", step: "revise", state: "start" });
-    episode = await write(client, request, 2, emit, { previous: episode, issues });
-    emit({ type: "script", round: 2, scenes: episode.scenes.length, lines: lineCount(episode) });
-    issues = await runChecks(client, episode, facts);
-    emit({ type: "issues", round: 2, issues });
+    for (let round = 2; issues.length > 0 && round <= 1 + MAX_REVISIONS; round++) {
+      episode = await write(client, request, round, emit, { previous: episode, issues });
+      emit({ type: "script", round, scenes: episode.scenes.length, lines: lineCount(episode) });
+      issues = await runChecks(client, episode, facts);
+      emit({ type: "issues", round, issues });
+    }
     emit({ type: "step", step: "revise", state: "done" });
   } else {
     emit({ type: "step", step: "revise", state: "skipped", detail: "修正不要" });
