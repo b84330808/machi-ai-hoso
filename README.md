@@ -6,9 +6,13 @@ Small towns in Japan publish council bills, voting results and monthly newslette
 
 > Built during [Built with Claude: Japan 2026](https://cerebralvalley.ai/e/built-with-claude-japan2026) (2026-11-02 – 2026-11-08). All code in this repository was written during the event.
 
+## Try it online
+
+**https://b84330808.github.io/machi-ai-hoso/** — no install or API key. Pick a town (自治体) and an audience (だれ向け) to watch the generated episodes; click any line of the script to jump to it, or its 出典 link to open the cited page of the town's PDF. For 愛媛県 久万高原町 / 一般, 取材の記録を再生 replays the newsroom run that made the episode (story ranking, cited facts, the script being written, the checker's corrections and rewrites), with the long waits shortened. To make new episodes, run the app locally (below).
+
 ## Status
 
-Prototype. The web app runs the whole pipeline locally; one hand-written sample episode (fictional data) renders end to end without an API key.
+Prototype. Eight episodes from four towns whose websites are open data. The web app runs the whole pipeline locally; the online version plays its results.
 
 ## Run the app
 
