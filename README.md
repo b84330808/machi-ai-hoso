@@ -78,7 +78,7 @@ City configs in `cities/` list the public documents used. Kumakogen (愛媛県�
 - Fonts: DotGothic16, Noto Sans JP, BIZ UDGothic, BIZ UDPGothic, BIZ UDPMincho, Klee One (SIL Open Font License) via Google Fonts
 - Web player: [Remotion Player](https://www.remotion.dev/player); dev server: [Vite](https://vite.dev/)
 - Sound effects and BGM: synthesized from code in `scripts/synth_audio.py`
-- Prototype narration: Microsoft neural voice ja-JP-NanamiNeural via `edge-tts` (to be replaced by Azure Speech before release)
+- Narration: Microsoft neural voices ja-JP-NanamiNeural (episodes) and ja-JP-KeitaNeural (demo video) via [`edge-tts`](https://github.com/rany2/edge-tts). Generated audio is not covered by this repository's license.
 
 ## License
 
