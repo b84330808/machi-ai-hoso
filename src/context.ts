@@ -8,3 +8,6 @@ export const useTimeline = (): Timeline => {
   if (!timeline) throw new Error("Timeline not loaded");
   return timeline;
 };
+
+/** Multiplier for every sound in an episode; the submission video lowers it under its own narration. */
+export const VolumeContext = createContext(1);

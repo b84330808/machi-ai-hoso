@@ -24,6 +24,8 @@ TICKS_PER_SECOND = 10_000_000
 VOICES = {
     "anchor": {"voice": "ja-JP-NanamiNeural", "rate": "+8%", "pitch": "+0Hz"},
     "kid": {"voice": "ja-JP-NanamiNeural", "rate": "+12%", "pitch": "+70Hz"},
+    # Narrator of the submission video (demo/narrate.py), distinct from the in-episode cast.
+    "narrator": {"voice": "ja-JP-KeitaNeural", "rate": "+6%", "pitch": "+0Hz"},
 }
 
 

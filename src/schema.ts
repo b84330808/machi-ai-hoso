@@ -64,7 +64,7 @@ export const Line = z.object({
   id: z.string(),
   speaker: Speaker,
   text: z.string().describe("Spoken sentence, natural Japanese"),
-  yomi: z.string().describe("Same sentence rewritten in kana where the TTS might misread (e.g. 1食 → いっしょく)").optional(),
+  yomi: z.string().describe("Same sentence for the TTS: kanji kept, only names, units and ambiguous readings replaced with kana").optional(),
   telop: z.string().describe("On-screen version of text with \\n line breaks, 13 characters per line max").optional(),
   emphasis: z.array(z.string()).describe("Substrings of telop to highlight").optional(),
   visual: Visual.optional(),

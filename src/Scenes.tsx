@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useContext } from "react";
 import { AbsoluteFill, Audio, Easing, interpolate, random, Sequence, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { Desk, Kitchen, Studio, TableFront } from "./components/Backgrounds";
 import { Character } from "./components/Character";
 import { PixelIcon } from "./components/PixelIcon";
 import { ANCHOR, KID, PixelSprite } from "./components/PixelSprite";
 import type { Visual } from "./schema";
+import { VolumeContext } from "./context";
 import { TimedLine, TimedScene, wordFrame } from "./timeline";
 import { bodyFont, colors, layout, outline, pixelFont } from "./theme";
 
@@ -22,11 +23,14 @@ const fit = (text: string, maxWidth: number, base: number, lines = 1) => {
   return Math.min(base, Math.floor((maxWidth * lines) / Math.max(ems, 1)));
 };
 
-const Sfx: React.FC<{ at: number; name: "pop" | "ding" | "tap" | "stamp"; volume?: number }> = ({ at, name, volume = 0.5 }) => (
-  <Sequence from={Math.max(0, Math.round(at))} durationInFrames={30} layout="none">
-    <Audio src={staticFile(`audio/sfx_${name}.wav`)} volume={volume} />
-  </Sequence>
-);
+const Sfx: React.FC<{ at: number; name: "pop" | "ding" | "tap" | "stamp"; volume?: number }> = ({ at, name, volume = 0.5 }) => {
+  const master = useContext(VolumeContext);
+  return (
+    <Sequence from={Math.max(0, Math.round(at))} durationInFrames={30} layout="none">
+      <Audio src={staticFile(`audio/sfx_${name}.wav`)} volume={volume * master} />
+    </Sequence>
+  );
+};
 
 const useSpring = (at: number, damping = 10, stiffness = 200) => {
   const frame = useCurrentFrame();

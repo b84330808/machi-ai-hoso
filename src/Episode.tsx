@@ -3,12 +3,15 @@ import { AbsoluteFill, Audio, interpolate, Sequence, staticFile } from "remotion
 import { linearTiming, TransitionSeries } from "@remotion/transitions";
 import { slide } from "@remotion/transitions/slide";
 import { OverlayRoot } from "./components/Overlay";
-import { TimelineContext } from "./context";
+import { TimelineContext, VolumeContext } from "./context";
 import { SceneView } from "./Scenes";
 import { Timeline, TRANSITION } from "./timeline";
 
-/** `episodeId` names the folder in public/episodes/; the timeline is loaded from it before rendering. */
-export type EpisodeProps = { episodeId: string; timeline: Timeline | null };
+/**
+ * `episodeId` names the folder in public/episodes/; the timeline is loaded from it before rendering.
+ * `volume` scales every sound (1 = as mixed).
+ */
+export type EpisodeProps = { episodeId: string; timeline: Timeline | null; volume?: number };
 
 const DUCK_PAD = 6;
 
@@ -25,34 +28,36 @@ const bgmVolume = (timeline: Timeline) => (frame: number) => {
   return base * fade;
 };
 
-export const Episode: React.FC<EpisodeProps> = ({ timeline }) => {
+export const Episode: React.FC<EpisodeProps> = ({ timeline, volume = 1 }) => {
   if (!timeline) return null;
   return (
     <TimelineContext.Provider value={timeline}>
-      <AbsoluteFill style={{ backgroundColor: "#14142b" }}>
-        <TransitionSeries>
-          {timeline.scenes.map((scene, i) => (
-            <Fragment key={scene.id}>
-              {i > 0 && (
-                <TransitionSeries.Transition
-                  presentation={slide({ direction: i % 2 ? "from-right" : "from-bottom" })}
-                  timing={linearTiming({ durationInFrames: TRANSITION })}
-                />
-              )}
-              <TransitionSeries.Sequence durationInFrames={scene.duration}>
-                <SceneView scene={scene} index={i} />
-              </TransitionSeries.Sequence>
-            </Fragment>
+      <VolumeContext.Provider value={volume}>
+        <AbsoluteFill style={{ backgroundColor: "#14142b" }}>
+          <TransitionSeries>
+            {timeline.scenes.map((scene, i) => (
+              <Fragment key={scene.id}>
+                {i > 0 && (
+                  <TransitionSeries.Transition
+                    presentation={slide({ direction: i % 2 ? "from-right" : "from-bottom" })}
+                    timing={linearTiming({ durationInFrames: TRANSITION })}
+                  />
+                )}
+                <TransitionSeries.Sequence durationInFrames={scene.duration}>
+                  <SceneView scene={scene} index={i} />
+                </TransitionSeries.Sequence>
+              </Fragment>
+            ))}
+          </TransitionSeries>
+          <OverlayRoot />
+          {timeline.lines.map((line) => (
+            <Sequence key={line.id} from={line.globalStart} durationInFrames={line.frames} layout="none">
+              <Audio src={staticFile(line.file)} volume={volume} />
+            </Sequence>
           ))}
-        </TransitionSeries>
-        <OverlayRoot />
-        {timeline.lines.map((line) => (
-          <Sequence key={line.id} from={line.globalStart} durationInFrames={line.frames} layout="none">
-            <Audio src={staticFile(line.file)} />
-          </Sequence>
-        ))}
-        <Audio src={staticFile("audio/bgm.wav")} loop volume={bgmVolume(timeline)} />
-      </AbsoluteFill>
+          <Audio src={staticFile("audio/bgm.wav")} loop volume={(f) => bgmVolume(timeline)(f) * volume} />
+        </AbsoluteFill>
+      </VolumeContext.Provider>
     </TimelineContext.Provider>
   );
 };

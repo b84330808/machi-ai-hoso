@@ -49,6 +49,17 @@ npm run render -- <episode-id>                # out/<episode-id>.mp4
 3. `src/timeline.ts` derives scene lengths from the audio, so the episode JSON never contains timestamps.
 4. Remotion renders the scenes (`src/Scenes.tsx`): three layouts and six animated visuals, pixel-art characters whose mouths follow the narration, and the source page under every line.
 
+## Demo video
+
+The submission video was made from recordings of this app, not a mock-up. `demo/record.mjs` drives the running app in headless Chrome and saves screencasts plus a log of clicks and of when each newsroom step appeared; `demo/narrate.py` voices `demo/narration.json`; the `Demo` composition (`src/demo/`) cuts the recordings to the narration, speeds up the waiting, and draws the episodes over the phone frame with their sound.
+
+```bash
+NO_HMR=1 npm run app      # in another terminal; NO_HMR keeps the page from reloading mid-recording
+npm run demo:record       # needs Google Chrome; the "make" clip runs the real newsroom (API key)
+npm run demo:narrate
+npm run demo:render       # out/demo.mp4
+```
+
 ## Data sources
 
 City configs in `cities/` list the public documents used. Kumakogen (愛媛県久万高原町) publishes its website content under the 公共データ利用規約 (PDL1.0); videos credit the source and note that it was edited. Downloaded documents are not committed.

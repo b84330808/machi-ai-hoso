@@ -174,7 +174,9 @@ const api = async (req: http.IncomingMessage, res: http.ServerResponse, url: URL
 };
 
 const server = http.createServer();
-const vite = await createVite({ configFile: path.resolve("vite.config.ts"), server: { middlewareMode: true, hmr: { server } }, appType: "spa" });
+// NO_HMR=1 keeps pages from reloading when files change, e.g. while demo/record.mjs is recording.
+const hmr = process.env.NO_HMR ? false : { server };
+const vite = await createVite({ configFile: path.resolve("vite.config.ts"), server: { middlewareMode: true, hmr }, appType: "spa" });
 
 server.on("request", (req, res) => {
   const url = new URL(req.url ?? "/", `http://${req.headers.host}`);

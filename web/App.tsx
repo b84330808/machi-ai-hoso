@@ -135,7 +135,7 @@ export const App = () => {
               </button>
             ) : (
               <button className="go" onClick={make} disabled={!canMake}>
-                {busy ? "取材中…" : existing ? "もう一度つくる" : "取材をはじめる"}
+                {busy ? "取材中…" : "取材をはじめる"}
               </button>
             )}
           </div>
