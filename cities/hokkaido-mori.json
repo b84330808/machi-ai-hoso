@@ -1,0 +1,16 @@
+{
+  "id": "hokkaido-mori",
+  "order": 3,
+  "city": "森町",
+  "prefecture": "北海道",
+  "license": "公共データ利用規約（PDL1.0）",
+  "licenseUrl": "https://www.town.hokkaido-mori.lg.jp/soshiki/kikakushinko/3109.html",
+  "docs": [
+    {
+      "id": "kessan-r7",
+      "title": "森町 企画振興課「令和7年度 森町の決算の概要をおしらせします」",
+      "url": "https://www.town.hokkaido-mori.lg.jp/material/files/group/1/kessan2611.pdf",
+      "page": "https://www.town.hokkaido-mori.lg.jp/soshiki/kikakushinko/5/3111.html"
+    }
+  ]
+}

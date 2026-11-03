@@ -1,8 +1,8 @@
 """Generate narration audio for every line in an episode and write a timing manifest.
 
 Prototype backend: edge-tts (same ja-JP neural voices as Azure TTS).
-Output: public/episode.json (the episode to render), public/audio/<line_id>.mp3
-and public/audio/manifest.json
+Output, for episodes/<episode_id>.json: public/episodes/<episode_id>/episode.json,
+<line_id>.mp3 for every line, and manifest.json with durations and word timings.
 
 Usage: python scripts/tts.py [episodes/sample-kyushokuhi.json]
 """
@@ -15,7 +15,6 @@ from pathlib import Path
 import edge_tts
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT_DIR = ROOT / "public" / "audio"
 
 # edge-tts streams "audio-24khz-48kbitrate-mono-mp3", a constant bitrate,
 # so the byte count gives the duration without decoding.
@@ -28,7 +27,7 @@ VOICES = {
 }
 
 
-async def synthesize(line: dict) -> dict:
+async def synthesize(line: dict, out_dir: Path) -> dict:
     params = VOICES[line["speaker"]]
     communicate = edge_tts.Communicate(
         line.get("yomi", line["text"]),
@@ -50,11 +49,11 @@ async def synthesize(line: dict) -> dict:
                     "end": (chunk["offset"] + chunk["duration"]) / TICKS_PER_SECOND,
                 }
             )
-    path = OUT_DIR / f"{line['id']}.mp3"
+    path = out_dir / f"{line['id']}.mp3"
     path.write_bytes(audio)
     return {
         "id": line["id"],
-        "file": f"audio/{path.name}",
+        "file": path.relative_to(ROOT / "public").as_posix(),
         "duration": len(audio) * 8 / MP3_BITRATE,
         "words": words,
     }
@@ -62,20 +61,23 @@ async def synthesize(line: dict) -> dict:
 
 async def main(episode_path: Path) -> None:
     episode = json.loads(episode_path.read_text(encoding="utf-8"))
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    for old in OUT_DIR.glob("*.mp3"):
+    out_dir = ROOT / "public" / "episodes" / episode_path.stem
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for old in out_dir.glob("*.mp3"):
         old.unlink()
-    (ROOT / "public" / "episode.json").write_text(
+    (out_dir / "manifest.json").unlink(missing_ok=True)
+    (out_dir / "episode.json").write_text(
         json.dumps(episode, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     lines = [line for scene in episode["scenes"] for line in scene["lines"]]
-    results = await asyncio.gather(*(synthesize(line) for line in lines))
+    results = await asyncio.gather(*(synthesize(line, out_dir) for line in lines))
     manifest = {r["id"]: r for r in results}
-    (OUT_DIR / "manifest.json").write_text(
+    # Written last: its presence means the episode is ready to play.
+    (out_dir / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     for r in results:
-        print(f"{r['id']}: {r['duration']:.2f}s, {len(r['words'])} words")
+        print(f"{r['id']}: {r['duration']:.2f}s, {len(r['words'])} words", flush=True)
 
 
 if __name__ == "__main__":

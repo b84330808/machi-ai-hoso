@@ -5,5 +5,5 @@ public/audio/
 .env
 .env.*
 
-public/episode.json
+public/episodes/
 sources/

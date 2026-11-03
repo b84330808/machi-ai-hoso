@@ -7,7 +7,8 @@ import { TimelineContext } from "./context";
 import { SceneView } from "./Scenes";
 import { Timeline, TRANSITION } from "./timeline";
 
-export type EpisodeProps = { timeline: Timeline | null };
+/** `episodeId` names the folder in public/episodes/; the timeline is loaded from it before rendering. */
+export type EpisodeProps = { episodeId: string; timeline: Timeline | null };
 
 const DUCK_PAD = 6;
 

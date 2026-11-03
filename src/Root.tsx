@@ -1,21 +1,13 @@
 import React from "react";
-import { CalculateMetadataFunction, Composition, staticFile } from "remotion";
+import { CalculateMetadataFunction, Composition } from "remotion";
 import { Episode as EpisodeView, EpisodeProps } from "./Episode";
-import { Episode } from "./schema";
-import { buildTimeline, FPS, Manifest } from "./timeline";
+import { loadTimeline } from "./load";
+import { FPS } from "./timeline";
 import { layout } from "./theme";
 
-const fetchJson = async (path: string) => {
-  const res = await fetch(staticFile(path));
-  if (!res.ok) throw new Error(`${path} missing. Run \`npm run tts -- episodes/<name>.json\` first.`);
-  return res.json();
-};
-
-const calculateMetadata: CalculateMetadataFunction<EpisodeProps> = async () => {
-  const episode = Episode.parse(await fetchJson("episode.json"));
-  const manifest = (await fetchJson("audio/manifest.json")) as Manifest;
-  const timeline = buildTimeline(episode, manifest);
-  return { durationInFrames: timeline.total, props: { timeline } };
+const calculateMetadata: CalculateMetadataFunction<EpisodeProps> = async ({ props }) => {
+  const timeline = await loadTimeline(props.episodeId);
+  return { durationInFrames: timeline.total, props: { ...props, timeline } };
 };
 
 export const RemotionRoot: React.FC = () => (
@@ -26,7 +18,7 @@ export const RemotionRoot: React.FC = () => (
     fps={FPS}
     width={layout.width}
     height={layout.height}
-    defaultProps={{ timeline: null }}
+    defaultProps={{ episodeId: "sample-kyushokuhi", timeline: null }}
     calculateMetadata={calculateMetadata}
   />
 );

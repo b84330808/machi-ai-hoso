@@ -1,0 +1,22 @@
+{
+  "id": "komono",
+  "order": 2,
+  "city": "菰野町",
+  "prefecture": "三重県",
+  "license": "公共データ利用規約（PDL1.0）",
+  "licenseUrl": "https://www2.town.komono.mie.jp/soshiki/1/5504.html",
+  "docs": [
+    {
+      "id": "jutaku-boshu",
+      "title": "菰野町「町営住宅入居者募集要領」",
+      "url": "https://www2.town.komono.mie.jp/uploaded/attachment/7410.pdf",
+      "page": "https://www2.town.komono.mie.jp/soshiki/10/10512.html"
+    },
+    {
+      "id": "bus-ukai",
+      "title": "菰野町 総務課「コミュニティバス かもしか号 1コース迂回運行のお知らせ」",
+      "url": "https://www2.town.komono.mie.jp/uploaded/attachment/7160.pdf",
+      "page": "https://www2.town.komono.mie.jp/soshiki/2/10958.html"
+    }
+  ]
+}
