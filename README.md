@@ -1,89 +1,105 @@
-# まちのAI放送局 (Machi AI Hōsō)
+# まちのAI放送局
 
-Turns what a town council decided into a short, animated news video that residents actually watch.
+日本語 | [English](README.en.md)
 
-Small towns in Japan publish council bills, voting results and monthly newsletters online, but they run to hundreds of pages and almost nobody reads them. Many of these towns no longer have a local newspaper or TV station. This project reads those public documents with Claude, picks the decisions that change residents' lives, and renders each one as a 1–3 minute vertical video with pixel-art characters, animated numbers and a source citation under every sentence.
+町が決めたことを、住民が最後まで見られる短いアニメニュースにします。
 
-> Built during [Built with Claude: Japan 2026](https://cerebralvalley.ai/e/built-with-claude-japan2026) (2026-11-02 – 2026-11-08). All code in this repository was written during the event.
+小さな町の暮らしを変える決定（議案、料金の改定案、募集のお知らせなど）は、町のサイトにPDFで公開されていますが、ほとんど読まれていません。このプロジェクトは、その公開資料を Claude が読み、住民への影響がいちばん大きい話題を選んで、1分ほどの縦型動画にします。ピクセルアートのキャラクターと動く数字で伝え、すべてのセリフに元資料のページを付けています。
 
-## Try it online
+> [Built with Claude: Japan 2026](https://cerebralvalley.ai/e/built-with-claude-japan2026)（2026年11月2日〜8日）の会期中に開発しました。このリポジトリのコードは、すべて会期中に書いたものです。
 
-**https://b84330808.github.io/machi-ai-hoso/** — no install or API key. Pick a town (自治体) and an audience (だれ向け) to watch the generated episodes; click any line of the script to jump to it, or its 出典 link to open the cited page of the town's PDF. For 愛媛県 久万高原町 / 一般, 取材の記録を再生 replays the newsroom run that made the episode (story ranking, cited facts, the script being written, the checker's corrections and rewrites), with the long waits shortened. To make new episodes, run the app locally (below).
+## すぐに試す（インストール不要）
 
-## Status
+**https://b84330808.github.io/machi-ai-hoso/** — インストールも API キーも不要です。
 
-Prototype. Eight episodes from four towns whose websites are open data. The web app runs the whole pipeline locally; the online version plays its results.
+1. 「自治体」と「だれ向け」を選ぶと、生成済みのニュースが右のスマホ枠で再生されます。
+2. 「完成原稿と出典」のセリフをクリックすると、その場面に移動します。「出典 p.2」のリンクで、町のPDFの該当ページが開きます。
+3. 「愛媛県 久万高原町／一般」で「取材の記録を再生」を押すと、このニュースをつくったときの実際の過程（ネタ選び、出典付きの取材メモ、台本の執筆、校閲の赤字と書き直し）を再生します。待ち時間は短縮しています。
 
-## Run the app
+新しいニュースをつくるには、下の手順でローカル版を動かしてください。
 
-Requirements: Node.js 22+, Python 3.11+ with `edge-tts` (`pip install edge-tts`), and an Anthropic API key in `.env` (`ANTHROPIC_API_KEY=...`) for the newsroom step.
+## 現状
+
+プロトタイプです。サイト全体がオープンデータとして公開されている4自治体で、8本のニュースを生成しています。ローカル版のアプリで生成から動画までのすべてを実行でき、オンライン版ではその結果を再生できます。
+
+## ローカルで動かす
+
+必要なもの：Node.js 22 以上、Python 3.11 以上と `edge-tts`（`pip install edge-tts`）、ニュースを生成する場合は `.env` に Anthropic の API キー（`ANTHROPIC_API_KEY=...`）。
 
 ```bash
 npm install
-npm run sfx      # synthesize sound effects and BGM into public/audio/
+npm run sfx      # 効果音と BGM を public/audio/ に生成
 npm run app      # http://localhost:5173
 ```
 
-1. Pick a town (自治体) and an audience (だれ向け), then press 取材をはじめる.
-2. The left side shows the newsroom at work: the desk ranks story ideas, the reporter extracts facts with page citations, the writer drafts the script on manuscript paper, the checker marks problems in red and the writer revises, then the narrator records.
-3. The finished video plays on the right. Under 完成原稿と出典, click a line to jump to it, or its 出典 link to open that page of the original PDF. MP4 に書き出す renders a file you can download.
+1. 「自治体」と「だれ向け」を選び、「取材をはじめる」を押します。
+2. 左側に編集部の作業が表示されます。デスクがネタを影響の大きい順に並べ、記者が原文のページ付きで事実を書き出し、構成作家が原稿用紙に台本を書き、校閲が赤字を入れて書き直させ、最後にナレーターが収録します。
+3. 完成した動画が右側で再生されます。「完成原稿と出典」でセリフをクリックするとその場面へ、「出典」で元のPDFの該当ページへ移動します。「MP4 に書き出す」で動画ファイルを保存できます。
 
-Without an API key the app still plays episodes that already exist in `episodes/` (it records the narration on first play).
+API キーがなくても、`episodes/` にある生成済みのニュースは再生できます（初回再生時に音声を収録します）。
 
-### Playback build (no server, no API key)
+### 再生専用版（サーバー・API キー不要）
 
 ```bash
-npm run build:static   # dist/: a static site for GitHub Pages or any static host
+npm run build:static   # dist/ に静的サイトを出力（GitHub Pages などに置けます）
 ```
 
-The same interface, reading pre-built data. It plays every voiced episode, and 取材の記録を再生 replays a newsroom run recorded while that episode was made (`episodes/<id>.log.json`: every progress event with its time; long waits are shortened). It cannot make new episodes.
+同じ画面で、事前に用意したデータを読み込みます。音声付きのニュースをすべて再生でき、「取材の記録を再生」では、そのニュースをつくったときに記録した編集部の過程（`episodes/<id>.log.json`：進行の各イベントと時刻）を再生します。新しいニュースはつくれません。
 
-## Command line
+## コマンドで使う
 
 ```bash
-npm run fetch -- kumakogen                    # download the town's public documents into sources/
-npm run generate -- kumakogen                 # Claude newsroom → episodes/kumakogen-<date>-general.json
-npm run tts -- episodes/<episode-id>.json     # narration + word timings into public/episodes/<episode-id>/
+npm run fetch -- kumakogen                    # 町の公開資料を sources/ にダウンロード
+npm run generate -- kumakogen                 # Claude 編集部 → episodes/kumakogen-<日付>-general.json
+npm run tts -- episodes/<episode-id>.json     # 音声と単語ごとのタイミングを public/episodes/<episode-id>/ に
 npm run render -- <episode-id>                # out/<episode-id>.mp4
 ```
 
-`npm run tts -- episodes/sample-kyushokuhi.json` then `npm run render -- sample-kyushokuhi` renders the hand-written sample. `npm run studio` opens the Remotion preview.
+`generate` には `--audience parents|seniors|easy`（子育て世帯・シニア・やさしい日本語）と `--reuse-facts`（その町の前回の取材メモから台本だけを書き直す）を指定できます。`npm run tts -- episodes/sample-kyushokuhi.json` のあと `npm run render -- sample-kyushokuhi` で、手書きのサンプル（架空のデータ）を動画にできます。`npm run studio` で Remotion のプレビューが開きます。
 
-## How it works
+## しくみ
 
-1. **Newsroom** (`scripts/generate.ts`, Claude Opus 5.5):
-   - *Desk* reads the town's PDFs and ranks items by how much they change residents' lives (structured output).
-   - *Facts* extracts the facts for the chosen item with page-level citations (Citations API).
-   - *Writer* turns the facts into an episode in the renderer's schema (`src/schema.ts`, structured output). Every anchor line lists the fact IDs it relies on.
-   - *Checks*: code verifies every number on screen comes from a cited fact and telop rows fit; a *fact checker* agent reviews accuracy, neutrality and proposal-vs-decided wording. Failures go back to the writer for one revision.
-   Every step reports progress events (`scripts/events.ts`); `server/index.ts` streams them to the web UI over Server-Sent Events.
-2. `scripts/tts.py` synthesizes each line and records word timings.
-3. `src/timeline.ts` derives scene lengths from the audio, so the episode JSON never contains timestamps.
-4. Remotion renders the scenes (`src/Scenes.tsx`): three layouts and six animated visuals, pixel-art characters whose mouths follow the narration, and the source page under every line.
+1. **編集部**（`scripts/newsroom.ts`、Claude Opus 5.5）
+   - **デスク**：町のPDFを読み、住民の暮らしへの影響が大きい順に話題を並べます（構造化出力）。
+   - **記者**：選んだ話題について、ページ単位の出典付きで事実を取り出します（Citations API）。
+   - **構成作家**：事実だけを使い、動画の設計図（`src/schema.ts`）の形で台本を書きます（構造化出力）。ストリーミングで、書いている途中のセリフも画面に出します。アナウンサーのセリフには、根拠にした事実の ID を必ず付けます。
+   - **校閲**：画面と音声に出る数字がすべて出典の事実に含まれるか、セリフやテロップが長すぎないかをコードで確認し、校閲役の Claude が正確さ・中立性・「案」と「決定」の区別を確かめます。指摘は構成作家に戻して最大2回書き直させ、残った指摘はニュースと一緒に記録します。
 
-## Demo video
+   各工程は進行イベント（`scripts/events.ts`）を出し、`server/index.ts` が Server-Sent Events で画面に送ります。
+2. `scripts/tts.py` がセリフごとに音声を合成し、単語ごとのタイミングを記録します。
+3. `src/timeline.ts` が音声の長さから場面の長さを決めるので、台本の JSON に時刻を書く必要はありません。
+4. Remotion が場面を描画します（`src/Scenes.tsx`）：3種類のレイアウトと6種類のアニメーション部品、声に合わせて口が動くピクセルアートのキャラクター、各セリフの出典表示。
 
-The submission video was made from recordings of this app, not a mock-up. `demo/record.mjs` drives the running app in headless Chrome and saves screencasts plus a log of clicks and of when each newsroom step appeared; `demo/narrate.py` voices `demo/narration.json`; the `Demo` composition (`src/demo/`) cuts the recordings to the narration, speeds up the waiting, and draws the episodes over the phone frame with their sound.
+## デモ動画
+
+提出したデモ動画は、このアプリを実際に操作した録画からつくっています（モックではありません）。`demo/record.mjs` が起動中のアプリを headless Chrome で操作して画面を録画し、クリック位置と編集部の各工程が表示された時刻を記録します。`demo/narrate.py` が `demo/narration.json` のナレーションを合成し、`Demo` コンポジション（`src/demo/`）がナレーションに合わせて録画を編集し、待ち時間を早送りし、スマホ枠の中にニュースを音声付きで重ねます。
 
 ```bash
-NO_HMR=1 npm run app      # in another terminal; NO_HMR keeps the page from reloading mid-recording
-npm run demo:record       # needs Google Chrome; the "make" clip runs the real newsroom (API key)
+NO_HMR=1 npm run app      # 別のターミナルで。NO_HMR で録画中のページ再読み込みを防ぎます
+npm run demo:record       # Google Chrome が必要。"make" の録画では実際に編集部を動かします（API キー）
 npm run demo:narrate
 npm run demo:render       # out/demo.mp4
 ```
 
-## Data sources
+## データの出典
 
-City configs in `cities/` list the public documents used. Kumakogen (愛媛県久万高原町) publishes its website content under the 公共データ利用規約 (PDL1.0); videos credit the source and note that it was edited. Downloaded documents are not committed.
+使用した公開資料は `cities/` の設定ファイルにあります。どの自治体もサイト全体を出典表示付きで再利用・加工できる条件で公開しており、動画には出典と加工した旨を表示しています。ダウンロードした資料はリポジトリに含めていません。
 
-## Credits
+| 自治体 | 利用条件 |
+| --- | --- |
+| 愛媛県久万高原町 | 公共データ利用規約（PDL1.0） |
+| 三重県菰野町 | 公共データ利用規約（PDL1.0） |
+| 北海道森町 | 公共データ利用規約（PDL1.0）。写真・画像は対象外のため使用していません |
+| 北海道室蘭市 | CC BY 4.0 |
 
-- Video rendering: [Remotion](https://www.remotion.dev/) (free for individuals under the Remotion License)
-- Fonts: DotGothic16, Noto Sans JP, BIZ UDGothic, BIZ UDPGothic, BIZ UDPMincho, Klee One (SIL Open Font License) via Google Fonts
-- Web player: [Remotion Player](https://www.remotion.dev/player); dev server: [Vite](https://vite.dev/)
-- Sound effects and BGM: synthesized from code in `scripts/synth_audio.py`
-- Narration: Microsoft neural voices ja-JP-NanamiNeural (episodes) and ja-JP-KeitaNeural (demo video) via [`edge-tts`](https://github.com/rany2/edge-tts). Generated audio is not covered by this repository's license.
+## クレジット
 
-## License
+- 動画の描画：[Remotion](https://www.remotion.dev/)（Remotion License により個人は無料）
+- フォント：DotGothic16、Noto Sans JP、BIZ UDGothic、BIZ UDPGothic、BIZ UDPMincho、Klee One（SIL Open Font License、Google Fonts 経由）
+- Web プレーヤー：[Remotion Player](https://www.remotion.dev/player)、開発サーバー：[Vite](https://vite.dev/)
+- 効果音・BGM：`scripts/synth_audio.py` のコードで合成
+- ナレーション：Microsoft のニューラル音声 ja-JP-NanamiNeural（ニュース）と ja-JP-KeitaNeural（デモ動画）を [`edge-tts`](https://github.com/rany2/edge-tts) で合成。生成した音声は、このリポジトリのライセンスの対象外です。
 
-Source code: MIT. See [LICENSE](LICENSE).
+## ライセンス
+
+ソースコード：MIT。[LICENSE](LICENSE) を参照してください。
